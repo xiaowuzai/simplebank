@@ -1,0 +1,24 @@
+version: "2"
+# cloud:
+  # organization: ""
+  # project: ""
+  # hostname: ""
+sql:
+  - engine: "postgresql"
+    queries: "./db/query/"
+    schema: "./db/migration/"
+    # database:
+      # managed: false
+    gen:
+      go:
+        package: "db"   # 生成包的名称
+        out: "./db/sqlc" # 生成文件的输出位置
+        sql_package: "lib/pq" # pgx/v4, pgx/v5 or database/sql
+        emit_json_tags: true
+        json_tags_case_style: camel # camel, pascal, snake。默认与 DB 相同
+
+overrides:
+  go: null
+plugins: []
+rules: []
+options: {}
