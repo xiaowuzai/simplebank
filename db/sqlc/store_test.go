@@ -120,3 +120,56 @@ func TestTransferTx(t *testing.T) {
 	require.Equal(t, account1.Balance-int64(n)*amount, updatedAccount1.Balance)
 	require.Equal(t, account2.Balance+int64(n)*amount, updatedAccount2.Balance)
 }
+
+func TestTransferTxDeadlock(t *testing.T) {
+	// 创建一个新的存储
+	store := NewStore(testDB)
+
+	// 创建两个随机账户
+	account1 := createRandomAccount(t)
+	account2 := createRandomAccount(t)
+	fmt.Println(">> before: ", account1.Balance, account2.Balance)
+
+	//循环 10次
+	n := 10
+	amount := int64(10)
+
+	// 创建一个错误通道和结果通道
+	errChan := make(chan error)
+
+	// 启动多个goroutine执行TransferTx
+	for i := 0; i < n; i++ {
+		//  5 次 A->B, 5 次 B -> A
+		fromAccountID, toAccountID := account1.ID, account2.ID
+		if i%2 == 0 {
+			fromAccountID, toAccountID = account2.ID, account1.ID
+		}
+
+		go func() {
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
+				FromAccountID: fromAccountID,
+				ToAccountID:   toAccountID,
+				Amount:        amount,
+			})
+
+			errChan <- err
+		}()
+	}
+
+	// 接收结果和错误
+	for i := 0; i < n; i++ {
+		err := <-errChan
+		require.NoError(t, err)
+	}
+
+	// 检查账户最终余额
+	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+
+	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	require.NoError(t, err)
+
+	fmt.Println(">> after: ", updatedAccount1.Balance, updatedAccount2.Balance)
+	require.Equal(t, account1.Balance, updatedAccount1.Balance)
+	require.Equal(t, account2.Balance, updatedAccount2.Balance)
+}
