@@ -3,12 +3,25 @@
 ## 简介
 simple bank 项目是用来学习 Go 后端开发流程所产生的
 
-### 涉及到的工具
+### 涉及到的工具及包
 1. db migration 
  数据库迁移工具，命令行形式安装
 https://github.com/golang-migrate/migrate
 
-2. 
+2. sqlc
+	根据 SQL 生成数据库读取代码
+
+3. gin 
+	实现 RESTful API
+
+4. viper
+	读取配置
+
+5. testify
+	测试断言
+
+6.  mock 
+	mock 测试
 
 
 
