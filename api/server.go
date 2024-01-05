@@ -7,12 +7,12 @@ import (
 
 // Server 为服务提供 http 请求
 type Server struct {
-	store  *db.Store
+	store  db.Store //  使用接口，方便 mock
 	router *gin.Engine
 }
 
 // NewServer 创建一个 HTTP server 并提供所有 API 路由
-func NewServer(store *db.Store) *Server {
+func NewServer(store db.Store) *Server {
 	server := &Server{store: store}
 	router := gin.Default()
 

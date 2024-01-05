@@ -22,7 +22,9 @@ https://github.com/golang-migrate/migrate
 
 6.  mock 
 	mock 测试
+	https://github.com/uber-go/mock
 
+	命令 `$mockgen -package mockdb  -destination db/mock/store.go github.com/xiaowuzai/simplebank/db/sqlc Store` 
 
 
 
