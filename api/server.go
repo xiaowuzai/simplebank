@@ -46,14 +46,15 @@ func (s *Server) setRouter() {
 	router.POST("/users", s.createUser)
 	router.POST("/users/login", s.loginUser)
 
-	router.POST("/accounts", s.createAccount)
-	router.GET("/accounts/:id", s.getAccount)
-	router.GET("/accounts", s.listAccount)
+	authGroup := router.Group("/").Use(authMiddleware(s.tokenMaker))
 
-	router.POST("/transfers", s.createTransfer)
+	authGroup.POST("/accounts", s.createAccount)
+	authGroup.GET("/accounts/:id", s.getAccount)
+	authGroup.GET("/accounts", s.listAccount)
+
+	authGroup.POST("/transfers", s.createTransfer)
 
 	s.router = router
-
 }
 
 // Start 在指定的地址启动服务
