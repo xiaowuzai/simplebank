@@ -31,23 +31,29 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 		tokenMaker: tokenMaker,
 		config:     config,
 	}
-	router := gin.Default()
 
 	// 注册验证器
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		v.RegisterValidation("currency", valiadCurrency)
 	}
 
-	router.POST("/users", server.createUser)
-
-	router.POST("/accounts", server.createAccount)
-	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccount)
-
-	router.POST("/transfers", server.createTransfer)
-
-	server.router = router
+	server.setRouter()
 	return server, nil
+}
+
+func (s *Server) setRouter() {
+	router := gin.Default()
+	router.POST("/users", s.createUser)
+	router.POST("/users/login", s.loginUser)
+
+	router.POST("/accounts", s.createAccount)
+	router.GET("/accounts/:id", s.getAccount)
+	router.GET("/accounts", s.listAccount)
+
+	router.POST("/transfers", s.createTransfer)
+
+	s.router = router
+
 }
 
 // Start 在指定的地址启动服务
