@@ -10,7 +10,12 @@ import (
 
 func TestPasetoMaker(t *testing.T) {
 	// 测试JWTMaker的New方法
-	maker := NewPasetoMaker()
+	symmetricKey := util.NewPasetoSymmetricKey()
+	// symmetricKey := "a0bb8951f8aa97d94707503d7560478ee1bd2db82868bee11113ca1317aac098"
+
+	maker, err := NewPasetoMaker(symmetricKey)
+	require.NoError(t, err)
+	require.NotEmpty(t, maker)
 
 	username := util.RandomOwner()
 	duration := time.Minute
@@ -32,7 +37,11 @@ func TestPasetoMaker(t *testing.T) {
 }
 
 func TestVerifyPasetoToken(t *testing.T) {
-	maker := NewPasetoMaker()
+	symmetricKey := util.NewPasetoSymmetricKey()
+
+	maker, err := NewPasetoMaker(symmetricKey)
+	require.NoError(t, err)
+	require.NotEmpty(t, maker)
 
 	token, payload, err := maker.CreateToken(util.RandomOwner(), -time.Minute)
 	require.NoError(t, err)

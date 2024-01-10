@@ -155,7 +155,8 @@ func TestCreateUserAPI(t *testing.T) {
 			tc.buildStubs(store)
 
 			// new http server
-			testServer := NewServer(store)
+			testServer := newTestServer(t, store)
+
 			recorder := httptest.NewRecorder()
 
 			// marshal body
@@ -194,5 +195,4 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	err = json.Unmarshal(data, &gotUser)
 	require.NoError(t, err)
 	require.Equal(t, user, gotUser)
-
 }

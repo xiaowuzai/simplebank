@@ -1,12 +1,18 @@
 package util
 
-import "github.com/spf13/viper"
+import (
+	"time"
+
+	"github.com/spf13/viper"
+)
 
 // Config 存储应用的所有配置, 使用 viper 来管理
 type Config struct {
-	DBDriver      string `mapstructure:"DB_DRIVER"`
-	DBSource      string `mapstructure:"DB_SOURCE"`
-	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
+	DBDriver          string        `mapstructure:"DB_DRIVER"`
+	DBSource          string        `mapstructure:"DB_SOURCE"`
+	ServerAddress     string        `mapstructure:"SERVER_ADDRESS"`
+	TokenSymmetricKey string        `mapstructure:"TOKEN_SYMMETRIC_KEY"`
+	TokenDuration     time.Duration `mapstructure:"TOKEN_DURATION"`
 }
 
 // LoadConfig  从指定路径中加载配置

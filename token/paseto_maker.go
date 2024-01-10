@@ -13,10 +13,17 @@ type PasetoMaker struct {
 }
 
 // NewPasetoMaker  Symmetric
-func NewPasetoMaker() Maker {
-	return &PasetoMaker{
-		symmetric: paseto.NewV4SymmetricKey(),
+func NewPasetoMaker(hexKey string) (Maker, error) {
+	symmetric, err := paseto.V4SymmetricKeyFromHex(hexKey)
+	if err != nil {
+		return nil, err
 	}
+
+	maker := &PasetoMaker{
+		symmetric: symmetric,
+	}
+
+	return maker, nil
 }
 
 // CreateToken 根据用户名和duration 创建 token
@@ -63,3 +70,8 @@ func (m *PasetoMaker) VerifyToken(signed string) (*Payload, error) {
 
 	return payload, nil
 }
+
+// NewPasetoSymmetricKey 生成对称密钥字符串
+// func NewPasetoSymmetricKey() string {
+// 	return paseto.NewV4SymmetricKey().ExportHex()
+// }
