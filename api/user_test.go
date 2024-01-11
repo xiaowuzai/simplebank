@@ -88,57 +88,6 @@ func TestCreateUserAPI(t *testing.T) {
 				requireBodyMatchUser(t, recorder.Body, user)
 			},
 		},
-		// {
-		// 	name: "InternalServerError",
-		// 	body: gin.H{
-		// 		"owner":    account.Owner,
-		// 		"currency": account.Currency,
-		// 	},
-		// 	buildStubs: func(store *mockdb.MockStore) {
-		// 		store.EXPECT().
-		// 			CreateAccount(gomock.Any(), gomock.Any()).
-		// 			Times(1).
-		// 			Return(db.Account{}, sql.ErrConnDone)
-		// 	},
-		// 	checkResponse: func(recorder *httptest.ResponseRecorder) {
-		// 		require.Equal(t, http.StatusInternalServerError, recorder.Code)
-		// 	},
-		// },
-		// {
-		// 	name: "BadRequest",
-		// 	body: gin.H{
-		// 		"owner":    account.Owner,
-		// 		"currency": account.Currency,
-		// 	},
-		// 	buildStubs: func(store *mockdb.MockStore) {
-		// 		arg := db.CreateAccountParams{
-		// 			Owner:    account.Owner,
-		// 			Currency: account.Currency,
-		// 			Balance:  0,
-		// 		}
-		// 		store.EXPECT().
-		// 			CreateAccount(gomock.Any(), arg).
-		// 			Times(1).
-		// 			Return(db.Account{}, &pq.Error{Code: pq.ErrorCode("23505")})
-		// 	},
-		// 	checkResponse: func(recorder *httptest.ResponseRecorder) {
-		// 		require.Equal(t, http.StatusBadRequest, recorder.Code)
-		// 	},
-		// },
-		// {
-		// 	name: "InvalidId",
-		// 	body: gin.H{
-		// 		"owner": account.Owner,
-		// 	},
-		// 	buildStubs: func(store *mockdb.MockStore) {
-		// 		store.EXPECT().
-		// 			CreateAccount(gomock.Any(), gomock.Any()).
-		// 			Times(0)
-		// 	},
-		// 	checkResponse: func(recorder *httptest.ResponseRecorder) {
-		// 		require.Equal(t, http.StatusBadRequest, recorder.Code)
-		// 	},
-		// },
 	}
 
 	for i := range cases {
@@ -185,7 +134,8 @@ func randomUser() (db.User, string) {
 		Email:    util.RandomEmail(),
 	}
 
-	return user, util.RandomString(6)
+	password := util.RandomString(6)
+	return user, password
 }
 func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	data, err := io.ReadAll(body)

@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 
@@ -24,9 +25,9 @@ func (s *Server) createAccount(ctx *gin.Context) {
 		return
 	}
 
-	payload := ctx.MustGet(authorizationHeaderKey).(*token.Payload)
+	authPayload := ctx.MustGet(ctxPayloadKey).(*token.Payload)
 	arg := db.CreateAccountParams{
-		Owner:    payload.Username,
+		Owner:    authPayload.Username,
 		Currency: req.Currency,
 		Balance:  0,
 	}
@@ -70,11 +71,19 @@ func (s *Server) getAccount(ctx *gin.Context) {
 		return
 	}
 
+	// 权限验证
+	authPayload := ctx.MustGet(ctxPayloadKey).(*token.Payload)
+	if authPayload.Username != account.Owner {
+		err := errors.New("owner error")
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, account)
 }
 
 type listAccountRequest struct {
-	PageID   int32 `form:"pageId" binding:"required,min=1"`
+	PageID   int32 `form:"pageID" binding:"required,min=1"`
 	PageSize int32 `form:"pageSize" binding:"required,min=5,max=10"`
 }
 
@@ -85,7 +94,9 @@ func (s *Server) listAccount(ctx *gin.Context) {
 		return
 	}
 
+	authPayload := ctx.MustGet(ctxPayloadKey).(*token.Payload)
 	arg := db.ListAccountsParams{
+		Owner:  authPayload.Username,
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
 	}
