@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	_ "github.com/lib/pq"
@@ -17,10 +18,13 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
+
+	fmt.Printf("config %v\n", config)
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db: ", err)
 	}
+	// defer conn.Close()
 
 	store := db.NewStore(conn)
 	server, err := api.NewServer(config, store)

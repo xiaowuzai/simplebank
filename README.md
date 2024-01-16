@@ -41,7 +41,7 @@ $ migrate create -ext sql -dir db/migration -seq init_schema
 ### 执行迁移命令
 
 ```
-migrate -path db/migration -database "postgresql://root:123456@localhost:5432/simple_bank?sslmode=disable" -verbose up
+migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose up
 ```
 
 
