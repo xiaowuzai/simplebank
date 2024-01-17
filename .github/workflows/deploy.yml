@@ -1,0 +1,28 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Deploy to production 
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+
+  build:
+    name: Build image
+    runs-on: ubuntu-latest
+    
+    steps:
+        - name: Login to aliyun ACR
+          uses: aliyun/acr-login@v1
+          with:
+            login-server: https://registry.cn-hangzhou.aliyuncs.com
+            username: "${{ secrets.ALIYUN_REGISTRY_USERNAME }}"
+            password: "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}"
+        - name: Build and push image
+          env:
+            IMAGE_TAG: ${{ github.sha }}
+          run: |
+              docker build -t ${{secrets.ALIYUN_REGISTRY_HOST}}:$IMAGE_TAG .
+              docker push ${{secrets.ALIYUN_REGISTRY_HOST}}:$IMAGE_TAG
