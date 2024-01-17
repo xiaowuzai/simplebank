@@ -14,12 +14,16 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+        - name: Check out code 
+          uses: actions/checkout@v3
+
         - name: Login to aliyun ACR
           uses: aliyun/acr-login@v1
           with:
             login-server: "${{ secrets.ALIYUN_SERVER_HOST}}"
             username: "${{ secrets.ALIYUN_REGISTRY_USERNAME }}"
             password: "${{ secrets.ALIYUN_REGISTRY_PASSWORD }}"
+
         - name: Build and push image
           env:
             IMAGE_TAG: ${{ github.sha }}
