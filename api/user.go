@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 	db "github.com/xiaowuzai/simplebank/db/sqlc"
 	"github.com/xiaowuzai/simplebank/util"
@@ -81,8 +82,12 @@ type loginUserRequest struct {
 }
 
 type loginUserResponse struct {
-	User  userResponse `json:"user"`
-	Token string       `json:"token"`
+	SessionID             uuid.UUID    `json:"sessionId"`
+	Token                 string       `json:"token"`
+	RefreshToken          string       `json:"refreshToken"`
+	TokenExpiredAt        time.Time    `json:"tokenExpiredAt"`
+	RefreshTokenExpiredAt time.Time    `json:"refreshTokenExpiredAt"`
+	User                  userResponse `json:"user"`
 }
 
 func (s *Server) loginUser(ctx *gin.Context) {
@@ -108,14 +113,37 @@ func (s *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
-	token, _, err := s.tokenMaker.CreateToken(user.Username, s.config.TokenDuration)
+	token, tokenPayload, err := s.tokenMaker.CreateToken(user.Username, s.config.TokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	refreshToken, refreshPayload, err := s.tokenMaker.CreateToken(user.Username, s.config.RefreshTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	session, err := s.store.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
 	ctx.JSON(http.StatusOK, loginUserResponse{
-		Token: token,
-		User:  newUserResponse(user),
+		SessionID:             session.ID,
+		User:                  newUserResponse(user),
+		Token:                 token,
+		RefreshToken:          refreshToken,
+		TokenExpiredAt:        tokenPayload.ExpiredAt,
+		RefreshTokenExpiredAt: refreshPayload.ExpiredAt,
 	})
 }
