@@ -13,7 +13,7 @@ var (
 )
 
 type Payload struct {
-	ID        string    `json:"id"` // 唯一标识 uuid
+	ID        uuid.UUID `json:"id"` // 唯一标识 uuid
 	Username  string    `json:"username"`
 	IssuedAt  time.Time `json:"issuedAt"`  // 何时创建
 	ExpiredAt time.Time `json:"expiredAt"` // 何时失效
@@ -27,7 +27,7 @@ func NewPayload(username string, duration time.Duration) (*Payload, error) {
 	}
 
 	payload := &Payload{
-		ID:        tokenID.String(),
+		ID:        tokenID,
 		Username:  username,
 		IssuedAt:  time.Now(),
 		ExpiredAt: time.Now().Add(duration),

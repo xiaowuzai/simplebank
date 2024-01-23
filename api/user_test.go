@@ -12,12 +12,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
-	db "github.com/xiaowuzai/simplebank/db/sqlc"
-	"github.com/xiaowuzai/simplebank/util"
+	"go.uber.org/mock/gomock"
 
 	mockdb "github.com/xiaowuzai/simplebank/db/mock"
-
-	"go.uber.org/mock/gomock"
+	db "github.com/xiaowuzai/simplebank/db/sqlc"
+	"github.com/xiaowuzai/simplebank/util"
 )
 
 var _ gomock.Matcher = (*eqCreateUserMatcher)(nil)
@@ -53,7 +52,7 @@ func EqCreateUserParams(arg db.CreateUserParams, password string) gomock.Matcher
 }
 
 func TestCreateUserAPI(t *testing.T) {
-	user, password := randomUser()
+	user, password := randomUser(t)
 
 	// hashPassword, err := util.HashPassword(password)
 	// require.NoError(t, err)
@@ -127,16 +126,88 @@ func TestCreateUserAPI(t *testing.T) {
 
 }
 
-func randomUser() (db.User, string) {
-	user := db.User{
-		Username: util.RandomOwner(),
-		FullName: util.RandomOwner(),
-		Email:    util.RandomEmail(),
+func TestUserLoginAPI(t *testing.T) {
+	user, password := randomUser(t)
+
+	cases := []struct {
+		name          string // test name
+		body          gin.H  // 方便 Http 调用
+		buildStubs    func(store *mockdb.MockStore)
+		checkResponse func(recoder *httptest.ResponseRecorder)
+	}{
+		{
+			name: "OK",
+			body: gin.H{
+				"username": user.Username,
+				"password": password,
+			},
+			buildStubs: func(store *mockdb.MockStore) {
+				store.EXPECT().
+					GetUser(gomock.Any(), gomock.Eq(user.Username)).
+					Times(1).
+					Return(user, nil)
+
+				store.EXPECT().
+					CreateSession(gomock.Any(), gomock.Any()).
+					Times(1)
+			},
+			checkResponse: func(recorder *httptest.ResponseRecorder) {
+				require.Equal(t, http.StatusOK, recorder.Code)
+			},
+		},
 	}
 
+	for i := range cases {
+		tc := cases[i]
+
+		t.Run(tc.name, func(t *testing.T) {
+			// gomock controller
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			// mock db store
+			store := mockdb.NewMockStore(ctrl)
+			// run case
+			tc.buildStubs(store)
+
+			// new http server
+			testServer := newTestServer(t, store)
+
+			recorder := httptest.NewRecorder()
+
+			// marshal body
+			data, err := json.Marshal(tc.body)
+			require.NoError(t, err)
+
+			// run api test
+			url := "/users/login"
+			request, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(data))
+			require.NoError(t, err)
+
+			testServer.router.ServeHTTP(recorder, request)
+
+			// check response
+			tc.checkResponse(recorder)
+		})
+	}
+
+}
+
+func randomUser(t *testing.T) (db.User, string) {
 	password := util.RandomString(6)
+	hashedPassword, err := util.HashPassword(password)
+	require.NoError(t, err)
+
+	user := db.User{
+		Username:       util.RandomOwner(),
+		FullName:       util.RandomOwner(),
+		Email:          util.RandomEmail(),
+		HashedPassword: hashedPassword,
+	}
+
 	return user, password
 }
+
 func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	data, err := io.ReadAll(body)
 	require.NoError(t, err)
@@ -144,5 +215,8 @@ func requireBodyMatchUser(t *testing.T, body *bytes.Buffer, user db.User) {
 	var gotUser db.User
 	err = json.Unmarshal(data, &gotUser)
 	require.NoError(t, err)
-	require.Equal(t, user, gotUser)
+	require.Equal(t, user.Username, gotUser.Username)
+	require.Equal(t, user.FullName, gotUser.FullName)
+	require.Equal(t, user.Email, gotUser.Email)
+	require.Empty(t, gotUser.HashedPassword)
 }

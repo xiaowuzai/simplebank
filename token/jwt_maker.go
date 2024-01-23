@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 const minSecretKeySize = 32
@@ -39,7 +40,7 @@ func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string,
 			ExpiresAt: jwt.NewNumericDate(payload.ExpiredAt),
 			IssuedAt:  jwt.NewNumericDate(payload.IssuedAt),
 			Issuer:    payload.Username,
-			ID:        payload.ID,
+			ID:        payload.ID.String(),
 		},
 	}
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -68,8 +69,12 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return nil, ErrInvalidToken
 	}
 
+	id, err := uuid.Parse(claims.ID)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
 	return &Payload{
-		ID:        claims.ID,
+		ID:        id,
 		Username:  claims.Issuer,
 		IssuedAt:  claims.IssuedAt.Time,
 		ExpiredAt: claims.ExpiresAt.Time,
