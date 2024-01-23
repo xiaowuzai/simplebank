@@ -19,6 +19,12 @@ migratedown:
 migratedown1:
 	migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose down 1
 
+db_docs:
+	dbdocs build doc/db.dbml
+
+db_schema:
+	dbml2sql --postgres -o doc/schema.sql doc/db.dbml
+
 sqlc: 
 	sqlc generate
 
