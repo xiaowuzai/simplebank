@@ -1,13 +1,23 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/encoding/protojson"
+
 	"github.com/xiaowuzai/simplebank/api"
 	db "github.com/xiaowuzai/simplebank/db/sqlc"
+	"github.com/xiaowuzai/simplebank/gapi"
+	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
 )
 
@@ -27,11 +37,80 @@ func main() {
 	// defer conn.Close()
 
 	store := db.NewStore(conn)
+	go runGatewayServer(config, store)
+	runGrpcServer(config, store)
+}
+
+func runGatewayServer(config util.Config, store db.Store) {
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create gRPC server: ", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	grpcMux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions: protojson.MarshalOptions{
+				UseProtoNames: true,
+			},
+			UnmarshalOptions: protojson.UnmarshalOptions{
+				DiscardUnknown: true,
+			},
+		}),
+	)
+	// grpcMux := runtime.NewServeMux()
+	// opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
+	if err != nil {
+		log.Fatal("cannot register handler server: ", err)
+	}
+
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/", grpcMux)
+
+	listener, err := net.Listen("tcp", config.HTTPServerAddress)
+	if err != nil {
+		log.Fatal("cannot create listener err: ", err)
+	}
+	defer listener.Close()
+
+	log.Printf("start gateway server at %s", listener.Addr().String())
+	if err = http.Serve(listener, httpMux); err != nil {
+		log.Fatal("cannot start gateway server: ", err)
+	}
+}
+
+func runGrpcServer(config util.Config, store db.Store) {
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create gRPC server: ", err)
+	}
+
+	grpcServer := grpc.NewServer()
+	pb.RegisterSimpleBankServer(grpcServer, server)
+	reflection.Register(grpcServer)
+
+	listener, err := net.Listen("tcp", config.GRPCServerAddress)
+	if err != nil {
+		log.Fatal("cannot create listener err: ", err)
+	}
+	defer listener.Close()
+
+	log.Printf("start gRPC server at %s", listener.Addr().String())
+	if err = grpcServer.Serve(listener); err != nil {
+		log.Fatal("cannot start grpc server: ", err)
+	}
+}
+
+func runGinServer(config util.Config, store db.Store) {
 	server, err := api.NewServer(config, store)
 	if err != nil {
 		log.Fatal("cannot new server: ", err)
 	}
-	if err := server.Start(config.ServerAddress); err != nil {
+
+	log.Printf("start HTTP server at %s", config.HTTPServerAddress)
+	if err := server.Start(config.HTTPServerAddress); err != nil {
 		log.Fatal("cannot start server: ", err)
 	}
 }
