@@ -69,12 +69,13 @@ func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
+	md := getMetadata(ctx)
 	session, err := s.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		Username:     user.Username,
 		RefreshToken: refreshToken,
-		UserAgent:    "",
-		ClientIp:     "",
+		UserAgent:    md.UserAgent,
+		ClientIp:     md.ClientIp,
 		IsBlocked:    false,
 		ExpiresAt:    refreshPayload.ExpiredAt,
 	})
