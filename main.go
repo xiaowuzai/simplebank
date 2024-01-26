@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"fmt"
 	"log"
 	"net"
@@ -20,6 +21,9 @@ import (
 	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
 )
+
+//go:embed doc/swagger/*
+var content embed.FS
 
 func main() {
 	// log.Println(util.NewPasetoSymmetricKey())
@@ -69,8 +73,9 @@ func runGatewayServer(config util.Config, store db.Store) {
 	httpMux := http.NewServeMux()
 	httpMux.Handle("/", grpcMux)
 
-	fs := http.FileServer(http.Dir("./doc/swagger"))
-	httpMux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
+	// embed fs
+	fs := http.FileServer(http.FS(content))
+	httpMux.Handle("/swagger/", http.StripPrefix("/swagger", fs))
 
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
