@@ -3,50 +3,23 @@ package gapi
 import (
 	"context"
 	"database/sql"
-	"log"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/lib/pq"
 	db "github.com/xiaowuzai/simplebank/db/sqlc"
 	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
+	"github.com/xiaowuzai/simplebank/validator"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
-	hashPassword, err := util.HashPassword(req.Password)
-	if err != nil {
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	arg := db.CreateUserParams{
-		Username:       req.Username,
-		HashedPassword: hashPassword,
-		FullName:       req.FullName,
-		Email:          req.Email,
-	}
-
-	user, err := s.store.CreateUser(ctx, arg)
-	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			log.Println(pqErr.Code.Name())
-			switch pqErr.Code.Name() {
-			case "unique_violation":
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
-			}
-		}
-		return nil, status.Errorf(codes.Internal, err.Error())
-	}
-
-	res := &pb.CreateUserResponse{
-		User: convertUserToPb(user),
-	}
-	return res, nil
-}
-
 func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
+	violations := validateLoginUserRequest(req)
+	if violations != nil {
+		return nil, invalidArgumentError(violations)
+	}
+
 	user, err := s.store.GetUser(ctx, req.Username)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -92,4 +65,16 @@ func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 		User:                  convertUserToPb(user),
 	}
 	return res, nil
+}
+
+func validateLoginUserRequest(req *pb.LoginUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
+	if err := validator.ValidateUsername(req.Username); err != nil {
+		violations = append(violations, fieldViolations("username", err))
+	}
+
+	if err := validator.ValidatePassword(req.Password); err != nil {
+		violations = append(violations, fieldViolations("password", err))
+	}
+
+	return
 }
