@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot connect to db: ", err)
 	}
-	// defer conn.Close()
+	defer conn.Close()
 
 	store := db.NewStore(conn)
 	go runGatewayServer(config, store)
