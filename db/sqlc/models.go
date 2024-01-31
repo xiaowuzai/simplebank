@@ -15,42 +15,42 @@ type Account struct {
 	Owner     string    `json:"owner"`
 	Balance   int64     `json:"balance"`
 	Currency  string    `json:"currency"`
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Entry struct {
 	ID        int64 `json:"id"`
-	AccountID int64 `json:"accountId"`
+	AccountID int64 `json:"account_id"`
 	// 金额变化。正数表示存入，负数表示取出
 	Amount    int64     `json:"amount"`
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Session struct {
 	ID           uuid.UUID `json:"id"`
 	Username     string    `json:"username"`
-	RefreshToken string    `json:"refreshToken"`
-	UserAgent    string    `json:"userAgent"`
-	ClientIp     string    `json:"clientIp"`
-	IsBlocked    bool      `json:"isBlocked"`
-	ExpiresAt    time.Time `json:"expiresAt"`
-	CreatedAt    time.Time `json:"createdAt"`
+	RefreshToken string    `json:"refresh_token"`
+	UserAgent    string    `json:"user_agent"`
+	ClientIp     string    `json:"client_ip"`
+	IsBlocked    bool      `json:"is_blocked"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type Transfer struct {
 	ID            int64 `json:"id"`
-	FromAccountID int64 `json:"fromAccountId"`
-	ToAccountID   int64 `json:"toAccountId"`
+	FromAccountID int64 `json:"from_account_id"`
+	ToAccountID   int64 `json:"to_account_id"`
 	// 金额变化。只能是正数
 	Amount    int64     `json:"amount"`
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type User struct {
 	Username          string    `json:"username"`
-	HashedPassword    string    `json:"hashedPassword"`
-	FullName          string    `json:"fullName"`
+	HashedPassword    string    `json:"hashed_password"`
+	FullName          string    `json:"full_name"`
 	Email             string    `json:"email"`
-	PasswordChangedAt time.Time `json:"passwordChangedAt"`
-	CreatedAt         time.Time `json:"createdAt"`
+	PasswordChangedAt time.Time `json:"password_changed_at"`
+	CreatedAt         time.Time `json:"created_at"`
 }

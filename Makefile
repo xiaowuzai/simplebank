@@ -1,5 +1,8 @@
-postgres:
+postgres-network:
 	docker run --network bank_network --name postgres16 -p 5432:5432 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=123456 -d postgres:16-alpine
+
+postgres:
+	docker run --name postgres16 -p 5432:5432 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=123456 -d postgres:16-alpine
 
 createdb:
 	docker exec -it postgres16 createdb --username=admin --owner=admin simple_bank
@@ -54,5 +57,5 @@ proto:
 evans:
 	evans --host localhost --port 9090 --reflection rep
 
-.PHONY: postgres createdb dropdb migrateup migratedown  migrateup1 migratedown1 sqlc test server \
+.PHONY: postgres-network postgres createdb dropdb migrateup migratedown  migrateup1 migratedown1 sqlc test server \
 	mock docker db_docs db_schema proto
