@@ -4,11 +4,15 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"fmt"
+	"errors"
 	"log"
 	"net"
 	"net/http"
 
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	_ "github.com/golang-migrate/migrate/v4/source/github"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
@@ -26,23 +30,35 @@ import (
 var content embed.FS
 
 func main() {
-	// log.Println(util.NewPasetoSymmetricKey())
-
 	config, err := util.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config: ", err)
 	}
 
-	fmt.Printf("config %v\n", config)
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
 		log.Fatal("cannot connect to db: ", err)
 	}
 	defer conn.Close()
 
+	// 升级数据库
+	migrateDB(config.MigrationUrl, config.DBSource)
+
 	store := db.NewStore(conn)
 	go runGatewayServer(config, store)
 	runGrpcServer(config, store)
+}
+
+func migrateDB(migrationUrl, dbSource string) {
+	m, err := migrate.New(
+		migrationUrl,
+		dbSource)
+	if err != nil {
+		log.Fatal("create new migrate instance error: ", err)
+	}
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatal("migration db error: ", err)
+	}
 }
 
 func runGatewayServer(config util.Config, store db.Store) {
