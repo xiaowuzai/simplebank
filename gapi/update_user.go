@@ -17,10 +17,21 @@ import (
 )
 
 func (s *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
+	// authorization
+	payload, err := s.authorizeUser(ctx)
+	if err != nil {
+		return nil, unauthenticatedError(err)
+	}
 
+	// 验证参数
 	violations := validateUpdateRequest(req)
 	if violations != nil {
 		return nil, invalidArgumentError(violations)
+	}
+
+	// 判断权限
+	if payload.Username != req.Username {
+		return nil, status.Errorf(codes.PermissionDenied, "you can only update your own account")
 	}
 
 	arg := db.UpdateUserParams{
