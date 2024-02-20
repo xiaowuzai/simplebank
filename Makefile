@@ -37,6 +37,9 @@ test:
 server:
 	go run main.go	
 
+local:
+	ENVIRONMENT=local go run main.go	
+
 mock:
 	mockgen -package mockdb  -destination db/mock/store.go github.com/xiaowuzai/simplebank/db/sqlc Store
 
@@ -57,5 +60,5 @@ proto:
 evans:
 	evans --host localhost --port 9090 --reflection rep
 
-.PHONY: postgres-network postgres createdb dropdb migrateup migratedown  migrateup1 migratedown1 sqlc test server \
-	mock docker db_docs db_schema proto
+.PHONY: postgres-network postgres createdb dropdb migrateup migratedown  migrateup1 migratedown1 sqlc test local server \
+	mock docker db_docs db_schema proto 

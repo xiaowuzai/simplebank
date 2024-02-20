@@ -8,6 +8,7 @@ import (
 
 // Config 存储应用的所有配置, 使用 viper 来管理
 type Config struct {
+	Environment          string        `mapstructure:"ENVIRONMENT"`
 	DBDriver             string        `mapstructure:"DB_DRIVER"`
 	DBSource             string        `mapstructure:"DB_SOURCE"`
 	MigrationUrl         string        `mapstructure:"MIGRATION_URL"`
