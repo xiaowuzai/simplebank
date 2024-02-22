@@ -2,6 +2,7 @@ package gapi
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -33,4 +34,50 @@ func GrpcLogger(ctx context.Context, req any, info *grpc.UnaryServerInfo, handle
 		Msg("")
 
 	return result, err
+}
+
+type ResponseRecorder struct {
+	http.ResponseWriter
+	StatusCode int
+	Body       []byte
+}
+
+// 重写 Header
+func (rec *ResponseRecorder) WriteHeader(code int) {
+	rec.StatusCode = code
+	rec.ResponseWriter.WriteHeader(code)
+}
+
+// 重写 Body
+func (rec *ResponseRecorder) Write(data []byte) (int, error) {
+	rec.Body = data
+	return rec.ResponseWriter.Write(data)
+}
+
+func HttpLogger(handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(res http.ResponseWriter, req *http.Request) {
+
+		startTime := time.Now()
+		rec := &ResponseRecorder{
+			ResponseWriter: res,
+			StatusCode:     http.StatusOK,
+		}
+		handler.ServeHTTP(rec, req)
+		duration := time.Since(startTime)
+
+		logger := log.Info()
+		if rec.StatusCode != http.StatusOK {
+			logger = log.Error().Str("err_msg", string(rec.Body))
+		}
+
+		logger.
+			Str("protocol", "HTTP").
+			Str("method", req.Method).
+			Str("path", req.RequestURI).
+			Int("status_code", rec.StatusCode).
+			Str("status_text", http.StatusText(rec.StatusCode)).
+			Dur("duration", duration).
+			Msg("")
+
+	})
 }
