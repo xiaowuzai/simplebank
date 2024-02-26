@@ -2,17 +2,19 @@ package gapi
 
 import (
 	"context"
-	"log"
+	"time"
 
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	db "github.com/xiaowuzai/simplebank/db/sqlc"
 	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
 	"github.com/xiaowuzai/simplebank/validator"
+	"github.com/xiaowuzai/simplebank/worker"
 )
 
 func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
@@ -26,30 +28,42 @@ func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
-	arg := db.CreateUserParams{
-		Username:       req.Username,
-		HashedPassword: hashPassword,
-		FullName:       req.FullName,
-		Email:          req.Email,
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.Username,
+			HashedPassword: hashPassword,
+			FullName:       req.FullName,
+			Email:          req.Email,
+		},
+		AfterCreateUser: func(user db.User) error {
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Username: user.Username,
+			}
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),                // 重试 10 次
+				asynq.ProcessIn(10 * time.Second), // 延迟 10 秒处理
+				asynq.Queue(worker.QueueCritical), // 队列名称
+			}
+			return s.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
+		},
 	}
 
-	user, err := s.store.CreateUser(ctx, arg)
+	user, err := s.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
-			log.Println(pqErr.Code.Name())
 			switch pqErr.Code.Name() {
 			case "unique_violation":
-				return nil, status.Errorf(codes.InvalidArgument, err.Error())
+				return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err.Error())
 			}
 		}
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-
 	res := &pb.CreateUserResponse{
 		User: convertUserToPb(user),
 	}
 	return res, nil
 }
+
 func validateCreateUserRequest(req *pb.CreateUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
 	if err := validator.ValidateUsername(req.Username); err != nil {
 		violations = append(violations, fieldViolations("username", err))

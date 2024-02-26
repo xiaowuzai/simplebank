@@ -1,0 +1,4 @@
+package mail
+
+func TestGmailSender() {
+}

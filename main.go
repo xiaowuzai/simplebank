@@ -14,6 +14,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/golang-migrate/migrate/v4/source/github"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/hibiken/asynq"
 	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -26,6 +27,7 @@ import (
 	"github.com/xiaowuzai/simplebank/gapi"
 	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
+	"github.com/xiaowuzai/simplebank/worker"
 )
 
 //go:embed doc/swagger/*
@@ -49,14 +51,21 @@ func main() {
 	defer conn.Close()
 
 	// 升级数据库
-	migrateDB(config.MigrationUrl, config.DBSource)
+	runDBMigration(config.MigrationUrl, config.DBSource)
 
 	store := db.NewStore(conn)
-	go runGatewayServer(config, store)
-	runGrpcServer(config, store)
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
+	go runTaskProcessor(redisOpt, store)
+	go runGatewayServer(config, store, taskDistributor)
+	runGrpcServer(config, store, taskDistributor)
 }
 
-func migrateDB(migrationUrl, dbSource string) {
+func runDBMigration(migrationUrl, dbSource string) {
 	m, err := migrate.New(
 		migrationUrl,
 		dbSource)
@@ -66,10 +75,24 @@ func migrateDB(migrationUrl, dbSource string) {
 	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		log.Fatal().Msgf("migration db error: %s", err)
 	}
+
+	log.Info().Msg("db migrated successfully")
 }
 
-func runGatewayServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+
+	log.Info().Msg("start task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+}
+
+func runGatewayServer(config util.Config, store db.Store,
+	distributor worker.TaskDistributor) {
+
+	server, err := gapi.NewServer(config, store, distributor)
 	if err != nil {
 		log.Fatal().Msgf("cannot create gRPC server: %s", err)
 	}
@@ -86,8 +109,6 @@ func runGatewayServer(config util.Config, store db.Store) {
 			},
 		}),
 	)
-	// grpcMux := runtime.NewServeMux()
-	// opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 	if err != nil {
 		log.Fatal().Msgf("cannot register handler server: %s", err)
@@ -112,8 +133,8 @@ func runGatewayServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGrpcServer(config util.Config, store db.Store, distributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, distributor)
 	if err != nil {
 		log.Fatal().Msgf("cannot create gRPC server: %s", err)
 	}
