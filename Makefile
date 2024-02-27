@@ -60,5 +60,8 @@ proto:
 evans:
 	evans --host localhost --port 9090 --reflection rep
 
+redis:
+	docker run --name redis -p 6379:6379 -d redis:7-alpine
+
 .PHONY: postgres-network postgres createdb dropdb migrateup migratedown  migrateup1 migratedown1 sqlc test local server \
-	mock docker db_docs db_schema proto 
+	mock docker db_docs db_schema proto redis
