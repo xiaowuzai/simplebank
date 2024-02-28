@@ -45,6 +45,7 @@ local:
 
 mock:
 	mockgen -package mockdb  -destination db/mock/store.go github.com/xiaowuzai/simplebank/db/sqlc Store
+	mockgen -package mockworker  -destination worker/mock/distributor.go github.com/xiaowuzai/simplebank/worker TaskDistributor
 
 docker:
 	docker build -f Dockerfile -t simplebank:latest .

@@ -48,7 +48,7 @@ func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb
 		},
 	}
 
-	user, err := s.store.CreateUserTx(ctx, arg)
+	txResult, err := s.store.CreateUserTx(ctx, arg)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
 			switch pqErr.Code.Name() {
@@ -59,7 +59,7 @@ func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	res := &pb.CreateUserResponse{
-		User: convertUserToPb(user),
+		User: convertUserToPb(txResult.User),
 	}
 	return res, nil
 }
