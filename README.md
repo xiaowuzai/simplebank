@@ -34,7 +34,7 @@ https://github.com/golang-migrate/migrate
 
 ### 创建迁移文件
 ```
-$ migrate create -ext sql -dir db/migration -seq init_schema
+$ migrate create -ext sql -dir db/migration -seq <migration_name>
 /Users/zly/workspace/go/src/github.com/xiaowuzai/simplebank/db/migration/000001_init_schema.up.sql
 /Users/zly/workspace/go/src/github.com/xiaowuzai/simplebank/db/migration/000001_init_schema.down.sql
 ```

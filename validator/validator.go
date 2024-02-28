@@ -63,3 +63,16 @@ func ValidateFullName(value string) error {
 	}
 	return nil
 }
+
+// 验证 emailId
+func ValidateEmailId(value int64) error {
+	if value <= 0 {
+		return fmt.Errorf("只能是正整数")
+	}
+	return nil
+}
+
+// 验证 Email 的验证码长度
+func ValidateEmailSecretCode(value string) error {
+	return ValidateString(value, 32, 32)
+}
