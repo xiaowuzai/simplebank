@@ -11,6 +11,7 @@ type Store interface {
 	Querier // 嵌入所有生成的接口
 	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
 	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (User, error)
+	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 }
 
 // Store 提供了数据库查询方式并且支持事务

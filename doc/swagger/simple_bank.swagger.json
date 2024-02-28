@@ -55,6 +55,8 @@
     },
     "/v1/login_user": {
       "post": {
+        "summary": "Login user",
+        "description": "This API is used to login a registered user.",
         "operationId": "SimpleBank_LoginUser",
         "responses": {
           "200": {
@@ -87,6 +89,8 @@
     },
     "/v1/update_user": {
       "patch": {
+        "summary": "Update user",
+        "description": "This API is used to update user info.",
         "operationId": "SimpleBank_UpdateUser",
         "responses": {
           "200": {
@@ -110,6 +114,45 @@
             "schema": {
               "$ref": "#/definitions/pbUpdateUserRequest"
             }
+          }
+        ],
+        "tags": [
+          "SimpleBank"
+        ]
+      }
+    },
+    "/v1/verify_email": {
+      "get": {
+        "summary": "Verify email",
+        "description": "This API is used to verify user's email address.",
+        "operationId": "SimpleBank_VerifyEmail",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbVerifyEmailResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "email_id",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "secret_code",
+            "in": "query",
+            "required": false,
+            "type": "string"
           }
         ],
         "tags": [
@@ -224,6 +267,14 @@
         "created_at": {
           "type": "string",
           "format": "date-time"
+        }
+      }
+    },
+    "pbVerifyEmailResponse": {
+      "type": "object",
+      "properties": {
+        "is_verified": {
+          "type": "boolean"
         }
       }
     },

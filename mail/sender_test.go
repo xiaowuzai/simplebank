@@ -5,6 +5,10 @@ import (
 )
 
 func TestGmailSender(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping test in short mode.")
+	}
+
 	// config, err := util.LoadConfig("..")
 	// require.NoError(t, err)
 
