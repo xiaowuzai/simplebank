@@ -12,7 +12,7 @@ type CreateUserTxResult struct {
 }
 
 // CreateUserTx 转移金额事务
-func (store *SQLStore) CreateUserTx(ctx context.Context, arg CreateUserTxParams) (User, error) {
+func (store *SQLStore) CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error) {
 	var result CreateUserTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
@@ -26,5 +26,5 @@ func (store *SQLStore) CreateUserTx(ctx context.Context, arg CreateUserTxParams)
 		return arg.AfterCreateUser(result.User)
 	})
 
-	return result.User, err
+	return result, err
 }

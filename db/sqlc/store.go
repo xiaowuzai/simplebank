@@ -10,7 +10,7 @@ import (
 type Store interface {
 	Querier // 嵌入所有生成的接口
 	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
-	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (User, error)
+	CreateUserTx(ctx context.Context, arg CreateUserTxParams) (CreateUserTxResult, error)
 	VerifyEmailTx(ctx context.Context, arg VerifyEmailTxParams) (VerifyEmailTxResult, error)
 }
 
