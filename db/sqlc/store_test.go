@@ -11,7 +11,7 @@ import (
 // TestTransferTx 测试转账事务
 func TestTransferTx(t *testing.T) {
 	// 创建一个新的存储
-	store := NewStore(testDB)
+	store := testStore
 
 	// 创建两个随机账户
 	account1 := createRandomAccount(t)
@@ -110,10 +110,10 @@ func TestTransferTx(t *testing.T) {
 	}
 
 	// 检查账户最终余额
-	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updatedAccount1, err := testStore.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updatedAccount2, err := testStore.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
 	fmt.Println(">> after: ", updatedAccount1.Balance, updatedAccount2.Balance)
@@ -123,7 +123,7 @@ func TestTransferTx(t *testing.T) {
 
 func TestTransferTxDeadlock(t *testing.T) {
 	// 创建一个新的存储
-	store := NewStore(testDB)
+	store := testStore
 
 	// 创建两个随机账户
 	account1 := createRandomAccount(t)
@@ -163,10 +163,10 @@ func TestTransferTxDeadlock(t *testing.T) {
 	}
 
 	// 检查账户最终余额
-	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	updatedAccount1, err := testStore.GetAccount(context.Background(), account1.ID)
 	require.NoError(t, err)
 
-	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	updatedAccount2, err := testStore.GetAccount(context.Background(), account2.ID)
 	require.NoError(t, err)
 
 	fmt.Println(">> after: ", updatedAccount1.Balance, updatedAccount2.Balance)

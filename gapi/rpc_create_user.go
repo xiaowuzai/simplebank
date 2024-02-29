@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/hibiken/asynq"
-	"github.com/lib/pq"
 	db "github.com/xiaowuzai/simplebank/db/sqlc"
 	"github.com/xiaowuzai/simplebank/pb"
 	"github.com/xiaowuzai/simplebank/util"
@@ -50,11 +49,8 @@ func (s *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb
 
 	txResult, err := s.store.CreateUserTx(ctx, arg)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			switch pqErr.Code.Name() {
-			case "unique_violation":
-				return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err.Error())
-			}
+		if db.ErrorCode(err) == db.UniqueViolationCode {
+			return nil, status.Errorf(codes.AlreadyExists, "username already exists: %s", err.Error())
 		}
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
