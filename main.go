@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"embed"
 	"errors"
 	"net"
@@ -15,7 +14,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/github"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/hibiken/asynq"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
@@ -45,16 +45,17 @@ func main() {
 		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	conn, err := sql.Open(config.DBDriver, config.DBSource)
+	// conn, err := sql.Open(config.DBDriver, config.DBSource)
+	dbPool, err := pgxpool.New(context.Background(), config.DBSource)
 	if err != nil {
 		log.Fatal().Msgf("cannot connect to db: %s", err)
 	}
-	defer conn.Close()
+	defer dbPool.Close()
 
 	// 升级数据库
 	runDBMigration(config.MigrationUrl, config.DBSource)
 
-	store := db.NewStore(conn)
+	store := db.NewStore(dbPool)
 	redisOpt := asynq.RedisClientOpt{
 		Addr: config.RedisAddress,
 	}
