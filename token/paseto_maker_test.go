@@ -18,9 +18,10 @@ func TestPasetoMaker(t *testing.T) {
 	require.NotEmpty(t, maker)
 
 	username := util.RandomOwner()
+	role := util.RandomString(6)
 	duration := time.Minute
 	// 测试JWTMaker的Create方法
-	token, payload, err := maker.CreateToken(username, duration)
+	token, payload, err := maker.CreateToken(username, role, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 	require.NotEmpty(t, token)
@@ -32,6 +33,7 @@ func TestPasetoMaker(t *testing.T) {
 	require.NotEmpty(t, payloadV.ID)
 
 	require.Equal(t, payload.Username, payloadV.Username)
+	require.Equal(t, payload.Role, payloadV.Role)
 	require.WithinDuration(t, payload.ExpiredAt, payloadV.ExpiredAt, time.Second)
 	require.WithinDuration(t, payload.IssuedAt, payloadV.IssuedAt, time.Second)
 }
@@ -43,7 +45,10 @@ func TestVerifyPasetoToken(t *testing.T) {
 	require.NoError(t, err)
 	require.NotEmpty(t, maker)
 
-	token, payload, err := maker.CreateToken(util.RandomOwner(), -time.Minute)
+	username := util.RandomOwner()
+	role := util.RandomString(6)
+
+	token, payload, err := maker.CreateToken(username, role, -time.Minute)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 	require.NotEmpty(t, token)

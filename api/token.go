@@ -68,6 +68,7 @@ func (s *Server) refreshToken(ctx *gin.Context) {
 
 	token, tokenPayload, err := s.tokenMaker.CreateToken(
 		refreshPayload.Username,
+		refreshPayload.Role,
 		s.config.TokenDuration,
 	)
 	if err != nil {

@@ -18,7 +18,7 @@ import (
 
 func (s *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UpdateUserResponse, error) {
 	// authorization
-	payload, err := s.authorizeUser(ctx)
+	payload, err := s.authorizeUser(ctx, []string{util.RoleBanker, util.RoleDepositor})
 	if err != nil {
 		return nil, unauthenticatedError(err)
 	}
@@ -30,7 +30,7 @@ func (s *Server) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb
 	}
 
 	// 判断权限
-	if payload.Username != req.Username {
+	if payload.Role != util.RoleBanker && payload.Username != req.Username {
 		return nil, status.Errorf(codes.PermissionDenied, "you can only update your own account")
 	}
 

@@ -15,9 +15,10 @@ func TestJWTMaker(t *testing.T) {
 	require.NoError(t, err)
 
 	username := util.RandomOwner()
+	role := util.RandomString(6)
 	duration := time.Minute
 	// 测试JWTMaker的Create方法
-	token, payload, err := maker.CreateToken(username, duration)
+	token, payload, err := maker.CreateToken(username, role, duration)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 	require.NotEmpty(t, token)
@@ -37,7 +38,7 @@ func TestVerifyToken(t *testing.T) {
 	maker, err := NewJWTMaker(util.RandomString(32))
 	require.NoError(t, err)
 
-	token, payload, err := maker.CreateToken(util.RandomOwner(), -time.Minute)
+	token, payload, err := maker.CreateToken(util.RandomOwner(), "", -time.Minute)
 	require.NoError(t, err)
 	require.NotEmpty(t, payload)
 	require.NotEmpty(t, token)
