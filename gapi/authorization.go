@@ -3,6 +3,7 @@ package gapi
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/xiaowuzai/simplebank/token"
@@ -21,7 +22,7 @@ var (
 	ErrAuthorizationType         = errors.New("invaild authorization type")
 )
 
-func (s *Server) authorizeUser(ctx context.Context) (*token.Payload, error) {
+func (s *Server) authorizeUser(ctx context.Context, accsessbleRoles []string) (*token.Payload, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, ErrMissingMetadata
@@ -55,6 +56,19 @@ func (s *Server) authorizeUser(ctx context.Context) (*token.Payload, error) {
 	if err != nil {
 		return nil, err
 	}
-	return payload, nil
 
+	if err := roleHasPermission(payload.Role, accsessbleRoles); err != nil {
+		return nil, err
+	}
+
+	return payload, nil
+}
+
+func roleHasPermission(userRole string, roles []string) error {
+	for _, role := range roles {
+		if role == userRole {
+			return nil
+		}
+	}
+	return fmt.Errorf("role permission denied")
 }

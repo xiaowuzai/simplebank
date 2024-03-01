@@ -19,6 +19,7 @@ const (
 type TaskProcessor interface {
 	Start() error
 	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
+	Shutdown()
 }
 
 // 使用 redis 实现任务处理接口
@@ -68,4 +69,9 @@ func (processor *RedisTaskProcessor) Start() error {
 	// 注册 handler
 	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
 	return processor.server.Start(mux)
+}
+
+// 关闭服务
+func (processor *RedisTaskProcessor) Shutdown() {
+	processor.server.Shutdown()
 }

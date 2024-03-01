@@ -14,7 +14,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.LoginUserResponse, error) {
+func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
+	*pb.LoginUserResponse, error) {
+
 	violations := validateLoginUserRequest(req)
 	if violations != nil {
 		return nil, invalidArgumentError(violations)
@@ -33,11 +35,20 @@ func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 		return nil, status.Errorf(codes.Unauthenticated, err.Error())
 	}
 
-	token, tokenPayload, err := s.tokenMaker.CreateToken(user.Username, s.config.TokenDuration)
+	token, tokenPayload, err := s.tokenMaker.CreateToken(
+		user.Username,
+		user.Role,
+		s.config.TokenDuration,
+	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
-	refreshToken, refreshPayload, err := s.tokenMaker.CreateToken(user.Username, s.config.RefreshTokenDuration)
+
+	refreshToken, refreshPayload, err := s.tokenMaker.CreateToken(
+		user.Username,
+		user.Role,
+		s.config.RefreshTokenDuration,
+	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
@@ -67,7 +78,9 @@ func (s *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (*pb.L
 	return res, nil
 }
 
-func validateLoginUserRequest(req *pb.LoginUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
+func validateLoginUserRequest(req *pb.LoginUserRequest) (
+	violations []*errdetails.BadRequest_FieldViolation) {
+
 	if err := validator.ValidateUsername(req.Username); err != nil {
 		violations = append(violations, fieldViolations("username", err))
 	}

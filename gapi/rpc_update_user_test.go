@@ -2,7 +2,6 @@ package gapi
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -15,20 +14,8 @@ import (
 	"github.com/xiaowuzai/simplebank/util"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
-
-func newContextWithBearerToken(t *testing.T, tokenMaker token.Maker, username string, timeDuration time.Duration) context.Context {
-	token, _, err := tokenMaker.CreateToken(username, time.Minute)
-	bearToken := fmt.Sprintf("%s %s", authorizationBearer, token)
-	require.NoError(t, err)
-
-	md := metadata.MD{
-		authorizationHeader: []string{bearToken},
-	}
-	return metadata.NewIncomingContext(context.Background(), md)
-}
 
 func TestUpdateUserAPI(t *testing.T) {
 	user, _ := randomUser(t)
@@ -78,7 +65,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Return(updatedUser, nil)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithBearerToken(t, tokenMaker, user.Username, time.Minute)
+				return newContextWithBearerToken(t, tokenMaker, user.Username, user.Role, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateUserResponse, err error) {
 				require.NoError(t, err)
@@ -103,7 +90,7 @@ func TestUpdateUserAPI(t *testing.T) {
 					Return(db.User{}, db.ErrRecordNotFound)
 			},
 			buildContext: func(t *testing.T, tokenMaker token.Maker) context.Context {
-				return newContextWithBearerToken(t, tokenMaker, newUsername, time.Minute)
+				return newContextWithBearerToken(t, tokenMaker, newUsername, user.Role, time.Minute)
 			},
 			checkResponse: func(t *testing.T, res *pb.UpdateUserResponse, err error) {
 				require.Error(t, err)

@@ -1,29 +1,37 @@
+DB_USER=root
+DB_PASSWORD=secret
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=simple_bank
+
 postgres-network:
-	docker run --network bank_network --name postgres16 -p 5432:5432 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=123456 -d postgres:16-alpine
+	docker run --network bank_network --name postgres16 -p $(DB_PORT):$(DB_PORT) -e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD) -d postgres:16-alpine
 
 postgres:
-	docker run --name postgres16 -p 5432:5432 -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=123456 -d postgres:16-alpine
+	docker run --name postgres16 -p $(DB_PORT):$(DB_PORT) \
+	-e POSTGRES_USER=$(DB_USER) -e POSTGRES_PASSWORD=$(DB_PASSWORD)  -e POSTGRES_DB=$(DB_NAME) \
+	-d postgres:16-alpine
 
 createdb:
-	docker exec -it postgres16 createdb --username=admin --owner=admin simple_bank
+	docker exec -it postgres16 createdb --username=$(DB_USER) --owner=$(DB_USER) $(DB_NAME)
 
 dropdb:
-	docker exec -it postgres16 dropdb simple_bank
+	docker exec -it postgres16 dropdb $(DB_NAME)
 
 new_migration:
 	migrate create -ext sql -dir db/migration -seq $(name)
 
 migrateup:
-	migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose up
+	migrate -path db/migration -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up
 
 migrateup1:
-	migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose up 1
+	migrate -path db/migration -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose up 1
 
 migratedown:
-	migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose down
 
 migratedown1:
-	migrate -path db/migration -database "postgresql://admin:123456@localhost:5432/simple_bank?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "postgresql://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=disable" -verbose down 1
 
 db_docs:
 	dbdocs build doc/db.dbml
@@ -58,11 +66,11 @@ proto:
     --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
 	--grpc-gateway_out=pb --grpc-gateway_opt=paths=source_relative \
 	--openapiv2_out=doc/swagger  --openapiv2_opt=allow_merge=true \
-	--openapiv2_opt=merge_file_name=simple_bank --openapiv2_opt=json_names_for_fields=false \
+	--openapiv2_opt=merge_file_name=$(DB_NAME) --openapiv2_opt=json_names_for_fields=false \
     proto/*.proto
 
 evans:
-	evans --host localhost --port 9090 --reflection rep
+	evans --host $(DB_HOST) --port 9090 --reflection rep
 
 redis:
 	docker run --name redis -p 6379:6379 -d redis:7-alpine

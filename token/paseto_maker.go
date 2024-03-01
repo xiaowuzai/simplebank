@@ -27,8 +27,8 @@ func NewPasetoMaker(hexKey string) (Maker, error) {
 }
 
 // CreateToken 根据用户名和duration 创建 token
-func (m *PasetoMaker) CreateToken(usernames string, duration time.Duration) (string, *Payload, error) {
-	payload, err := NewPayload(usernames, duration)
+func (m *PasetoMaker) CreateToken(usernames, role string, duration time.Duration) (string, *Payload, error) {
+	payload, err := NewPayload(usernames, role, duration)
 	if err != nil {
 		return "", payload, nil
 	}
